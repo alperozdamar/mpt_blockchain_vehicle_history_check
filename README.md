@@ -12,6 +12,8 @@ If every vehicle service in Turkey use a blockchain to keep service records of s
 
 4-) Car service information can be queried by users.
 
+Please visit latest version of Project Plan: 
+
 ## What I have done so far? (DONE LIST)
 
 |                |DONE							 |NEXT TODO|
@@ -43,25 +45,16 @@ Service GUI-->>Service User: 200 OK
 
 Note right of Service GUI: Service User inserts <br/> mileage and carPlate <br/> for Service to record <br/> it to the transaction. <br/> Service User and <br/> Service GUI is the <br/>same machine(entity).<br/> So no need to sign the <br/> information. 
 ```
+####  RSA Public/Private Key Generation
+I used crypto/rsa library to create public and private key pairs for every services who publishes car information to the blockchain. 
 
+## What will I do next? (TODO LIST)
 
-
-1-) Design Car Object Structure    
-
-2-) Signature Creation&Verification
-
-    2.a.)Generate Public&Private Key Pair
-    
-3-) Generate PublicKey&PrivateKey  (crpyto/rsa library )
-
-    RSA Create Signature
-    
-    RSA Verify Signature
-    
-X-) MPT => (Key:CarId, Value:CarObjectJSONString);
-
-4-) 
-
-
-
-
+|                |NEXT TO DO
+|-------------|------------------------------------------------------------|
+|1-)		  |Signing hearbeat with Public Key of Receiver
+|3-)          |     Verify received heartbeat with Private Key         
+|3-)          |     Data distribution through peers(services)       
+|4-)          |     Interface for users to read car information      
+|5-)          |Test
+|5-)          |Demo Video 
