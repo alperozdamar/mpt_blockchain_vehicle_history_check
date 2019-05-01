@@ -1,8 +1,47 @@
-# alperozdamar_mpt_project5
+# Vehicle History Check
+In Turkey, the second-hand car market is really huge. Approximately 6 million cars exchange between individuals yearly. Second hand car prices are directly related with car’s brand name, model year and feature of car. On the other hand, Turkish car buyers also care about some other features like car’s kilometer, car’s accident history. For instance, if there is an additional paint in the car,(other than the manufacturer’s paint in the factory) Turkish people don’t want to buy it in a regular second-hand price and car’s price reduces drastically. Car Mileage is also very important for Turkish people. They don’t want to pay much to used cars which has more than 200.000 km. As a result, some people (not few) manipulate car’s mileage. They lower car’s actual mileage to be able to sell their cars with a higher price. It is really hard for a regular buyer to understand this fraud. 
+If every vehicle service in Turkey use a blockchain to keep service records of serviced car, Dishonest sellers can not fool buyers, easily. Blockchain is immutable, nobody can change car history and or data will never get lost. These records will be distributed to every car service in Turkey. (decentralization) If a buyer or anyone request a “history check” of a car, they can be able to see this immutable data. 
 
-## Car Vehicle History
+# Functionalities/ Success 
 
-BlockChain Project-5
+1-) Services add service information about incoming cars, successfully.
+2-) Car service information distributed to all car services, successfully.
+3-) Car service information can’t be changed. (Data Integrity is important.) 
+4-) Car service information can be queried by users.
+
+## What I have done so far? (DONE LIST)
+
+|                |DONE							 |NEXT TODO|
+|----------------|-------------------------------|-----------------------------|
+|1-)		|Private/Public key generation, Sign/Verification |Integrate it with Heartbeats           
+|2-)          |     Car Info. Insertion GUI      | Car Info. Query GUI         |
+|3-)          |Define data structures for car info. , transaction |DONE!|
+
+#### Transaction Object
+
+|      Attribute          |Data Type|Description|
+|----------------|-------------------------------|-----------------------------|
+|transactionId   | String| UniqueId For Transaction           
+|serviceId|String|Unique Id For Service (who creates the record)
+|carPlate       |     String    | Unique Key of Car         |
+|mileage      |int|	Car's mileage |
+|insertDate|timestamp|	the date that car came to the service |
+|transactionFee |int     |	fee for publishing the block |
+
+
+####  Service GUI
+Every Service has its own GUI. Lets Say Ankara has its own car service GUI, Istanbul has its own car service GUI.  
+```mermaid
+sequenceDiagram
+Service User->> Service GUI: GET http://localhost:8080/getCarForm
+Service GUI-->>Service User: "CarForm.html"
+Service User->> Service GUI: POST Car Info.
+Service GUI-->>Service User: 200 OK
+
+Note right of Service GUI: Service User inserts <br/> mileage and carPlate <br/> for Service to record <br/> it to the transaction. <br/> Service User and <br/> Service GUI is the <br/>same machine(entity).<br/> So no need to sign the <br/> information. 
+```
+
+
 
 1-) Design Car Object Structure    
 2-) Signature Creation&Verification
