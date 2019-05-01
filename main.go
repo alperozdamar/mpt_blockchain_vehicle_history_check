@@ -15,7 +15,7 @@ func main() {
 
 	//	newBlock.DecodeFromJson(testJson)
 
-	//	fmt.Println("Alper Block :",newBlock)
+	//	fmt.Println("Alper Block :",newBlock)+
 	//	fmt.Println("Alper P2.Block :",p2.Block{})
 
 	//	mpt1 := p1.MerklePatriciaTrie{}
