@@ -5,8 +5,11 @@ If every vehicle service in Turkey use a blockchain to keep service records of s
 # Functionalities/ Success 
 
 1-) Services add service information about incoming cars, successfully.
+
 2-) Car service information distributed to all car services, successfully.
+
 3-) Car service information can’t be changed. (Data Integrity is important.) 
+
 4-) Car service information can be queried by users.
 
 ## What I have done so far? (DONE LIST)
@@ -44,12 +47,19 @@ Note right of Service GUI: Service User inserts <br/> mileage and carPlate <br/>
 
 
 1-) Design Car Object Structure    
+
 2-) Signature Creation&Verification
+
     2.a.)Generate Public&Private Key Pair
+    
 3-) Generate PublicKey&PrivateKey  (crpyto/rsa library )
+
     RSA Create Signature
+    
     RSA Verify Signature
+    
 X-) MPT => (Key:CarId, Value:CarObjectJSONString);
+
 4-) 
 
 
