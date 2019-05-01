@@ -39,6 +39,9 @@ Every Service has its own GUI. Lets Say Ankara has its own car service GUI, Ista
 
 ![For Car Gui Insert GUI:](https://github.com/alperozdamar/alperozdamar_mpt_project5/blob/master/car_gui_insert.png)
 
+
+![For Car Gui Sequence Diagram:](https://github.com/alperozdamar/alperozdamar_mpt_project5/blob/master/Sequence_GUI.png)
+
 ```mermaid
 sequenceDiagram
 Service User------GET http://localhost:8080/getCarForm--------->> Service GUI 
