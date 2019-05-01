@@ -42,17 +42,6 @@ Every Service has its own GUI. Lets Say Ankara has its own car service GUI, Ista
 
 ![For Car Gui Sequence Diagram:](https://github.com/alperozdamar/alperozdamar_mpt_project5/blob/master/Sequence_GUI.png)
 
-```mermaid
-sequenceDiagram
-Service User------GET http://localhost:8080/getCarForm--------->> Service GUI 
-            <<------------"CarForm.html"-----------------------    
-             -----------------POST Car Info.------------------->> 
-            <<---------------200 OK----------------------------     
-
-Note right of Service GUI: Service User inserts mileage and carPlate for Service to record  it to the transaction. 
-
-Service User and Service GUI is the same machine(entity).So no need to sign the information. 
-```
 ####  RSA Public/Private Key Generation
 I used crypto/rsa library to create public and private key pairs for every services who publishes car information to the blockchain. 
 
