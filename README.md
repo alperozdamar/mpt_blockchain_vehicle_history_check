@@ -39,9 +39,9 @@ Every Service has its own GUI. Lets Say Ankara has its own car service GUI, Ista
 ```mermaid
 sequenceDiagram
 Service User------GET http://localhost:8080/getCarForm--------->> Service GUI 
-            <<------------"CarForm.html"-----------------------   Service GUI 
-             -----------------POST Car Info.------------------->> Service GUI
-            <<---------------200 OK----------------------------   Service GUI 
+            <<------------"CarForm.html"-----------------------    
+             -----------------POST Car Info.------------------->> 
+            <<---------------200 OK----------------------------     
 
 Note right of Service GUI: Service User inserts mileage and carPlate for Service to record  it to the transaction. Service User and Service GUI is the same machine(entity).So no need to sign the information. 
 ```
