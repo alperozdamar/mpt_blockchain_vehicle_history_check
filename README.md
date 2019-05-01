@@ -38,12 +38,12 @@ Please visit latest version of Project Plan:
 Every Service has its own GUI. Lets Say Ankara has its own car service GUI, Istanbul has its own car service GUI.  
 ```mermaid
 sequenceDiagram
-Service User->> Service GUI: GET http://localhost:8080/getCarForm
-Service GUI-->>Service User: "CarForm.html"
-Service User->> Service GUI: POST Car Info.
-Service GUI-->>Service User: 200 OK
+Service User------GET http://localhost:8080/getCarForm--------->> Service GUI 
+            <<------------"CarForm.html"-----------------------   Service GUI 
+             -----------------POST Car Info.------------------->> Service GUI
+            <<---------------200 OK----------------------------   Service GUI 
 
-Note right of Service GUI: Service User inserts <br/> mileage and carPlate <br/> for Service to record <br/> it to the transaction. <br/> Service User and <br/> Service GUI is the <br/>same machine(entity).<br/> So no need to sign the <br/> information. 
+Note right of Service GUI: Service User inserts mileage and carPlate for Service to record  it to the transaction. Service User and Service GUI is the same machine(entity).So no need to sign the information. 
 ```
 ####  RSA Public/Private Key Generation
 I used crypto/rsa library to create public and private key pairs for every services who publishes car information to the blockchain. 
