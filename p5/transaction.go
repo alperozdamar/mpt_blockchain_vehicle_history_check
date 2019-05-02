@@ -5,6 +5,7 @@ import (
 )
 
 type Transaction struct {
+	transactionId	string 		`json:"transactionId"`
 	carId 			string		`json:"carId"` 		//can be car's pilate (Unique Value)
 	mileage  		int32		`json:"mileage"`
 	plate			string 		`json:"plate"`
