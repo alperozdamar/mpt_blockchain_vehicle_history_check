@@ -49,9 +49,9 @@ I used crypto/rsa library to create public and private key pairs for every servi
 
 |                |NEXT TO DO
 |-------------|------------------------------------------------------------|
-|1-)		  |Signing hearbeat with Public Key of Receiver
-|3-)          |     Verify received heartbeat with Private Key         
-|3-)          |     Data distribution through peers(services)       
-|4-)          |     Interface for users to read car information      
-|5-)          |Test
-|5-)          |Demo Video 
+|1-)		      | Signing request with Key
+|2-)          | Verify received heartbeat 
+|3-)          | Data distribution through peers(services)       
+|4-)          | Interface for users to read car information      
+|5-)          | Test
+|6-)          | Demo Preparation 
