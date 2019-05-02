@@ -12,7 +12,7 @@ If every vehicle service in Turkey use a blockchain to keep service records of s
 
 4-) Car service information can be queried by users.
 
-Please visit latest version of Project Plan: 
+Please visit latest version of Project Plan: https://github.com/alperozdamar/alperozdamar_mpt_project5/blob/master/Project5_Plan_V_2.mpp
 
 ## What I have done so far? (DONE LIST)
 
