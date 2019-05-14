@@ -2,30 +2,42 @@ package p5
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 type Transaction struct {
-	transactionId	string 		`json:"transactionId"`
-	carId 			string		`json:"carId"` 		//can be car's pilate (Unique Value)
-	mileage  		int32		`json:"mileage"`
-	plate			string 		`json:"plate"`
-	transactionFee	int32		`json:"transactionFee"`
+	TransactionId	string 		`json:"transactionId"`
+	Mileage  		int32		`json:"mileage"`
+	Plate			string 		`json:"plate"` //car's pilate (Unique Value)
+	TransactionFee	int		    `json:"transactionFee"`
 }
 
-func (transaction *Transaction) EncodeToJson() (string, error) {
-	jsonBytes, error := json.Marshal(transaction)
-	return string(jsonBytes), error
-}
-
-func (transaction *Transaction) DecodeFromJson(jsonString string) error {
-	return json.Unmarshal([]byte(jsonString), transaction)
+func NewTransaction(transactionId string, mileage int32, plate string,transactionFee int) (Transaction)   {
+	return Transaction{
+			TransactionId:transactionId,
+			Mileage:mileage,
+			Plate:plate,
+			TransactionFee:transactionFee,
+		}
 }
 
 func (transaction *Transaction) EncodeToJSON() (string, error) {
+	fmt.Println("test.transaction:",transaction)
 	jsonBytes, error := json.Marshal(transaction)
+	fmt.Println("test.jsonBytes:",string(jsonBytes))
 	return string(jsonBytes), error
 }
 
 func (transaction *Transaction) DecodeFromJSON(jsonString string) error {
 	return json.Unmarshal([]byte(jsonString), transaction)
 }
+
+//func (transaction *Transaction) TransactionVerification(transactionId string) error {
+//
+//	//Verify the signature. (Decrypt)
+//
+//
+//
+//	//Verify the balance.
+//	return nil;
+//}

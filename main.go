@@ -1,10 +1,10 @@
 package main
 
 import (
-	"reflect"
-
-	"./p5"
-	"fmt"
+	"./p3"
+	"log"
+	"net/http"
+	"os"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 	//data.TestPeerListRebalance()
 
 	//KEY GENERATION
-	key:=p5.GenerateKeyPair(2048);
+/*	key:=p5.GenerateKeyPair(2048);
 
 	fmt.Println("publicKey:",&key.PublicKey)
 	fmt.Println("privateKey::",key)
@@ -49,15 +49,17 @@ func main() {
 		fmt.Println("YES THEY ARE SAME PERFECT")
 	}else{
 		fmt.Errorf("NO THEY ARE NOT SAME.THERE IS A PROBLEM")
+	}*/
+
+
+	router := p3.NewRouter()
+	if len(os.Args) > 1 {
+		log.Fatal(http.ListenAndServe(":"+os.Args[1], router))
+	} else {
+		log.Fatal(http.ListenAndServe(":6686", router))
 	}
 
 
-	//router := p3.NewRouter()
-	//if len(os.Args) > 1 {
-	//	log.Fatal(http.ListenAndServe(":"+os.Args[1], router))
-	//} else {
-	//	log.Fatal(http.ListenAndServe(":6686", router))
-	//}
 }
 
 

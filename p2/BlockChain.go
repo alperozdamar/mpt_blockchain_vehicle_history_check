@@ -140,9 +140,9 @@ func (blockChain *BlockChain) Canonical() string {
 		rs += "\n"
 		rs += fmt.Sprintf("Chain # %d:\n ", i+1)
 		for  height > 0{
-			rs += fmt.Sprintf("height=%d, timestamp=%d, hash=%s, parentHash=%s, size=%d\n",
+			rs += fmt.Sprintf("height=%d, timestamp=%d, hash=%s, parentHash=%s, size=%d , value=%s\n",
 				currentBlock.Header.Height, currentBlock.Header.Timestamp, currentBlock.Header.Hash,
-				currentBlock.Header.ParentHash, currentBlock.Header.Size)
+				currentBlock.Header.ParentHash, currentBlock.Header.Size, currentBlock.Value)
 			currentBlock, _= blockChain.GetBlock(currentBlock.Header.Height-1, currentBlock.Header.ParentHash)
 			height = height - 1
 		}

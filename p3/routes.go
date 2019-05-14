@@ -48,4 +48,16 @@ var routes = Routes{
 		"/canonical",
 		Canonical,
 	},
+	Route{
+		"GetCarForm",
+		"GET",
+		"/getCarForm",
+		CarFormAPI,
+	},
+	Route{
+		"PostCarForm",
+		"POST",
+		"/postCarForm",
+		CarFormAPI,
+	},
 }
