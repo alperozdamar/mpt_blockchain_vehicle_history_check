@@ -3,8 +3,10 @@ package p3
 import (
 	"../p1"
 	"../p2"
+	"../p5"
 	"./data"
 	"bytes"
+	"crypto/rsa"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -36,12 +38,20 @@ var StopGeneratingNewBlock =false
 
 var SPECIAL_BLOCK_PREFIX="00000"; //5 zeros...
 
+
+var mpt p1.MerklePatriciaTrie
+var newTransactionObject p5.Transaction;
+//key: transactionId , value:TransactionObject
+var TransactionMap  map[string]p5.Transaction // TransactionMap that contains transactions...
+var UserKey *rsa.PrivateKey
+
 //Create SyncBlockChain and PeerList instances.
 func init() {
 		fmt.Println("Init method is triggered!")
+		TransactionMap = make(map[string]p5.Transaction);
 		SBC = data.NewBlockChain()
 		Peers = data.NewPeerList(Peers.GetSelfId(),32);
-		mpt:=p1.MerklePatriciaTrie{}
+		mpt=p1.MerklePatriciaTrie{}
 		mpt.Initial()
 		mpt.Insert(p2.String(2),p2.String(5))
 		block:=p2.Block{}
@@ -92,8 +102,18 @@ func Start(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("I am the first node! No need to download!")
 	}
 
-	//go StartTryingNonce()
-	StartTryingNonce()
+	UserKey =p5.GenerateKeyPair(2014)
+
+	fmt.Println("Public Key:",UserKey.PublicKey)
+	fmt.Println("Private Key::",UserKey)
+
+
+	publicKeyAsPemStr,_:=p5.ExportRsaPublicKeyAsPemStr(&UserKey.PublicKey);
+	Peers.Add(publicKeyAsPemStr,Peers.GetSelfId())
+
+
+	go StartTryingNonce()
+	//StartTryingNonce()
 
 	ticker := time.NewTicker(10 * time.Second)
 	quit := make(chan struct{})
@@ -479,6 +499,86 @@ func StartTryingNonce(){
 				goto GetLatestBlock
 			}
 		}
+	}
+}
+
+func CarFormAPI(w http.ResponseWriter, r *http.Request) {
+	log.Println("GetCarForm method is triggered!")
+
+	//if r.URL.Path != "/getCarForm" {
+	//	http.Error(w, "404 not found.", http.StatusNotFound)
+	//	return
+	//}
+
+	switch r.Method {
+	case "GET":
+		log.Println("GET CarForm triggered!")
+
+		dir, err := os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("PWD:",dir)
+
+		http.ServeFile(w, r, "CarForm.html")
+	case "POST":
+		log.Println("POST CarForm triggered!")
+
+		// Call ParseForm() to parse the raw query and update r.PostForm and r.Form.
+		if err := r.ParseForm(); err != nil {
+			fmt.Fprintf(w, "ParseForm() err: %v", err)
+			return
+		}
+
+		fmt.Fprintf(w, "HTTP Post sent to Registeration Server! PostForm = %v\n", r.PostForm)
+		plate := r.FormValue("plate")
+		mileage := r.FormValue("mileage")
+		fmt.Fprintf(w, "plate = %s\n", plate)
+		fmt.Fprintf(w, "mileage = %s\n", mileage)
+
+		transactionId:="abcd324234"
+		transactionFee:=10;
+		i64, _ := strconv.ParseInt(mileage, 10, 32)
+		mileageInt := int32(i64)
+		newTransactionObject =p5.NewTransaction(transactionId,mileageInt,plate,transactionFee);
+		fmt.Println("Transaction:", newTransactionObject);
+
+		fmt.Println("StartTryingNonce.NewTransaction:",newTransactionObject);
+		transactionJSON,_:=newTransactionObject.EncodeToJSON()
+		fmt.Println("Transaction JSON:",transactionJSON)
+
+
+		mpt.Insert(transactionId,transactionJSON)
+		fmt.Println("mpt:",mpt)
+
+		PeerMap := Peers.GetPeerMap()
+		fmt.Println("Size of PeerMap:",len(PeerMap))
+		//key is address
+		//value is id
+		// Send heart beat to every node !
+		for publicKey, port := range PeerMap {
+			fmt.Printf("key[%s] value[%s]\n", publicKey, port)
+
+			cipherTextToMiner, hash, label, _:=p5.Encrypt(transactionJSON,&UserKey.PublicKey);
+
+			fmt.Println("cipherTextToMiner is:", cipherTextToMiner )
+			fmt.Println("hash is:", hash )
+			fmt.Println("label is:", label )
+
+			signature, opts, hashed, newhash, _:= p5.Sign(cipherTextToMiner, UserKey) //Private Key
+			fmt.Println("User Signature is:", signature)
+			fmt.Println("opts is:", opts)
+			fmt.Println("hashed is:", hashed)
+			fmt.Println("newhash is:", newhash)
+		}
+
+
+		TransactionMap[transactionId] = newTransactionObject;
+
+		fmt.Println("TransactionMap Size:",len(TransactionMap))
+
+	default:
+		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
 	}
 }
 
