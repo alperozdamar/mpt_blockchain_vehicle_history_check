@@ -2,6 +2,7 @@ package data
 
 import (
 	"container/ring"
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -12,6 +13,7 @@ import (
 type PeerList struct {
 	selfId int32
 	peerMap map[string]int32
+	peerPublicKeyMap map[*rsa.PublicKey]int32
 	maxLength int32
 	mux sync.Mutex
 }
@@ -72,13 +74,26 @@ func sortMapByValue(m map[string]int32) PairList {
 }
 
 func NewPeerList(id int32, maxLength int32) PeerList {
-	peerList := PeerList{peerMap: make(map[string]int32), maxLength: maxLength}
+	peerList := PeerList{
+		peerMap: make(map[string]int32),
+		peerPublicKeyMap: make(map[*rsa.PublicKey]int32),
+		maxLength: maxLength}
+	peerList.Register(id)
+	return peerList
+}
+
+func NewPeerPublicKeyList(id int32, maxLength int32) PeerList {
+	peerList := PeerList{peerPublicKeyMap: make(map[*rsa.PublicKey]int32), maxLength: maxLength}
 	peerList.Register(id)
 	return peerList
 }
 
 func(peers *PeerList) Add(addr string, id int32) {
 	peers.peerMap[addr]=id;
+}
+
+func(peers *PeerList) AddPublicKey(publicKey *rsa.PublicKey, id int32) {
+	peers.peerPublicKeyMap[publicKey]=id;
 }
 
 func(peers *PeerList) Delete(addr string) {
@@ -143,6 +158,42 @@ func(peers *PeerList) Show() string {
 	rs += "\n"
 	//rs = fmt.Sprintf("This is the PeerMap: %s\n", hex.EncodeToString(sum[:])) + rs
 	rs = fmt.Sprintf("This is the PeerMap: \n") + rs
+	fmt.Print(rs)
+	return  rs
+}
+
+func(peers *PeerList) Show2() string {
+	rs := ""
+	peers.mux.Lock()
+	defer peers.mux.Unlock()
+	for addr, id := range peers.peerMap {
+		rs += fmt.Sprintf("addr= %s ", addr)
+		rs += fmt.Sprintf(", id= %d \n", id)
+	}
+	rs += "\n"
+	for publicKey, id := range peers.peerPublicKeyMap {
+		rs += fmt.Sprintf("public Key= %s ", publicKey)
+		rs += fmt.Sprintf(", id= %d \n", id)
+	}
+	rs += "\n"
+	//rs = fmt.Sprintf("This is the PeerMap: %s\n", hex.EncodeToString(sum[:])) + rs
+	rs = fmt.Sprintf("This is the PeerMap: \n") + rs
+	fmt.Print(rs)
+	return  rs
+}
+
+
+func(peers *PeerList) ShowPublicMap() string {
+	rs := ""
+	peers.mux.Lock()
+	defer peers.mux.Unlock()
+	for publicKey, id := range peers.peerPublicKeyMap {
+		rs += fmt.Sprintf("public Key= %s ", publicKey)
+		rs += fmt.Sprintf(", id= %d \n", id)
+	}
+	rs += "\n"
+	//rs = fmt.Sprintf("This is the PeerMap: %s\n", hex.EncodeToString(sum[:])) + rs
+	rs = fmt.Sprintf("This is the PeerPublicKeyMap: \n") + rs
 	fmt.Print(rs)
 	return  rs
 }
