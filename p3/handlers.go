@@ -42,6 +42,8 @@ var TxPool TransactionPool;
 var userBalance int=1000;
 var transactionFee int=100;
 
+var UserKey *rsa.PrivateKey =p5.GenerateKeyPair(2014);
+
 type TransactionPool struct {
 	Pool      map[string]p5.Transaction `json:"pool"`
 	Confirmed map[string]bool        `json:"confirmed"`
@@ -787,11 +789,19 @@ func CarFormAPI(w http.ResponseWriter, r *http.Request) {
 			transactionId := p2.String(8)
 			i64, _ := strconv.ParseInt(mileage, 10, 32)
 			mileageInt := int32(i64)
-			newTransactionObject = p5.NewTransaction(transactionId, mileageInt, plate, transactionFee, userBalance,t1,SELF_ADDR);
+			newTransactionObject = p5.NewTransaction(transactionId, mileageInt, plate, transactionFee, userBalance,t1,SELF_ADDR,&MinerKey.PublicKey);
 			fmt.Println("Transaction:", newTransactionObject);
 			fmt.Println("StartTryingNonce.NewTransaction:", newTransactionObject);
 			transactionJSON, _ := newTransactionObject.EncodeToJSON()
 			fmt.Println("Transaction JSON:", transactionJSON)
+
+			//encryptedPKCS1v15:=p5.EncryptPKCS(&MinerKey.PublicKey,transactionJSON)
+
+			//h,hashed,signature:=p5.SignPKCS(transactionJSON,MinerKey);
+
+			//fmt.Println("h:",h)
+			//fmt.Println("hashed:",hashed)
+			//fmt.Println("signature:",signature)
 
 			//mpt.Insert(transactionId,transactionJSON)
 			//fmt.Println("mpt:",mpt)
@@ -803,7 +813,7 @@ func CarFormAPI(w http.ResponseWriter, r *http.Request) {
 			// Send heart beat to every node !
 			/*for publicKey, port := range  PeerPublicKeyMap {
 			fmt.Printf("key[%s] value[%s]\n", publicKey, port)
-			cipherTextToMiner, hash, label, _:=p5.Encrypt(transactionJSON,&MinerKey.PublicKey);
+			cipherTextToMiner, hash, label, _:=p5.Encrypt(transactionJSON,UserKey);
 			fmt.Println("cipherTextToMiner is:", cipherTextToMiner )
 			fmt.Println("hash is:", hash )
 			fmt.Println("label is:", label )

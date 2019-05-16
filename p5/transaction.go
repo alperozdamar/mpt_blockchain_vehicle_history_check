@@ -1,6 +1,7 @@
 package p5
 
 import (
+	"crypto/rsa"
 	"encoding/json"
 	"time"
 )
@@ -12,10 +13,15 @@ type Transaction struct {
 	TransactionFee	int		    `json:"transactionFee"`
 	Balance			int	        `json:"balance"`
 	Time			time.Time   `json:"time"`
-	ServiceName     string	    `json:"service"`
+	ServiceName     string	   	 `json:"service"`
+	PublicKey       *rsa.PublicKey	    `json:"publicKey"`
+	//H 				crypto.Hash `json:"service"`
+	//Signature 		[]byte		`json:"service"`
+	//Hashed 			[]byte 	    `json:"service"`
 }
 
-func NewTransaction(transactionId string, mileage int32, plate string,transactionFee int,balance int,time time.Time,serviceName string) (Transaction)   {
+//func NewTransaction(transactionId string, mileage int32, plate string,transactionFee int,balance int,time time.Time,serviceName string,h crypto.Hash, hashed[]byte,signature[]byte,publicKey *rsa.PublicKey) (Transaction)   {
+ func NewTransaction(transactionId string, mileage int32, plate string,transactionFee int,balance int,time time.Time,serviceName string,publicKey *rsa.PublicKey) (Transaction)   {
 	return Transaction{
 			TransactionId:transactionId,
 			Mileage:mileage,
@@ -24,6 +30,10 @@ func NewTransaction(transactionId string, mileage int32, plate string,transactio
 			Balance:balance,
 			Time:time,
 			ServiceName:serviceName,
+			PublicKey:publicKey,
+	//		H:h,
+	//		Signature:signature,
+	//		Hashed:hashed,
 		}
 }
 

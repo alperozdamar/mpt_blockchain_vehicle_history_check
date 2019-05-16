@@ -2,6 +2,7 @@ package p5
 
 import (
 	"crypto"
+	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -10,6 +11,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"hash"
+	"io"
 	"log"
 	"os"
 	"errors"
@@ -315,4 +317,58 @@ func ParseRsaPublicKeyFromPemStr(pubPEM string) (*rsa.PublicKey, error) {
 		break // fall through
 	}
 	return nil, errors.New("Key type is not RSA")
+}
+
+func EncryptPKCS (publickey *rsa.PublicKey, msg string) []byte{
+	msgByte := []byte(msg)
+	encryptedPKCS1v15, errPKCS1v15 := rsa.EncryptPKCS1v15(rand.Reader, publickey, msgByte)
+
+	if errPKCS1v15 != nil {
+		fmt.Println(errPKCS1v15)
+		os.Exit(1)
+	}
+
+	fmt.Printf("PKCS1v15 encrypted [%s] to \n[%x]\n", string(msg), encryptedPKCS1v15)
+	return encryptedPKCS1v15
+}
+
+func DecryptPKCS (privatekey *rsa.PrivateKey, encryptedPKCS1v15 []byte) []byte{
+	decryptedPKCS1v15, err := rsa.DecryptPKCS1v15(rand.Reader, privatekey, encryptedPKCS1v15)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Printf("PKCS1v15 decrypted [%x] to \n[%s]\n", encryptedPKCS1v15, decryptedPKCS1v15)
+	fmt.Println()
+	return decryptedPKCS1v15
+}
+
+func SignPKCS (message string , privatekey *rsa.PrivateKey)(crypto.Hash,[]byte, []byte ){
+	var h crypto.Hash
+	messageByte := []byte(message)
+	hash := md5.New()
+	io.WriteString(hash, string(messageByte))
+	hashed := hash.Sum(nil)
+	signature, err := rsa.SignPKCS1v15(rand.Reader, privatekey, h, hashed)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Printf("PKCS1v15 Signature : %x\n", signature)
+	return h, hashed, signature
+}
+
+func VerifyPKCS (publickey *rsa.PublicKey, h crypto.Hash, hashed []byte, signature []byte) (bool, error){
+	verified := false
+	err := rsa.VerifyPKCS1v15(publickey, h, hashed, signature)
+
+	if err != nil {
+		fmt.Println("VerifyPKCS1v15 failed")
+		os.Exit(1)
+		verified = false
+	} else {
+		fmt.Println("VerifyPKCS1v15 successful")
+		verified = true
+	}
+	return verified, err
 }
