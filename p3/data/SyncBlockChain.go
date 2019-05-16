@@ -123,3 +123,9 @@ func (sbc *SyncBlockChain) Canonical() string {
 	defer sbc.mux.Unlock()
 	return sbc.bc.Canonical()
 }
+
+func (sbc *SyncBlockChain) GetCarInformation(plate string) string {
+	sbc.mux.Lock()
+	defer sbc.mux.Unlock()
+	return sbc.bc.GetCarInformation(plate)
+}

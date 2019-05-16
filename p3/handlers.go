@@ -923,13 +923,10 @@ func QueryCarAPI(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprintf(w, "HTTP Post sent to Server! PostForm = %v\n", r.PostForm)
+		//fmt.Fprintf(w, "HTTP Post sent to Server! PostForm = %v\n", r.PostForm)
 		plate := r.FormValue("plate")
 		fmt.Fprintf(w, "plate = %s\n", plate)
-
-
-
-
+		fmt.Fprintf(w, "SEARCH RESULT = %s\n", SBC.GetCarInformation(plate))
 
 	default:
 		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")

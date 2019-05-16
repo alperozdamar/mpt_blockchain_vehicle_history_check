@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"golang.org/x/crypto/sha3"
 	"sort"
+	"strings"
 )
 
 //Chain:This is a map which maps a block height to a list of blocks. The value is a list so that it can handle the forks
@@ -156,6 +157,36 @@ func (blockChain *BlockChain) Canonical() string {
 	fmt.Println(rs)
 	return rs
 }
+
+func (blockChain *BlockChain) GetCarInformation(plate string) string {
+	rs := ""
+	forksBlocks:= blockChain.GetLatestBlocks()
+	for i, currentBlock := range forksBlocks {
+		height := blockChain.Length
+		rs += "\n"
+		rs += fmt.Sprintf("Chain # %d:\n ", i+1)
+		for  height > 0{
+			for _, valueObject := range currentBlock.Value.DB {
+				if strings.Contains(valueObject.String(), plate) {
+					fmt.Println("TransactionObject:", valueObject.String())
+					rs += fmt.Sprintf("Value=%s\n", valueObject.String());
+				}else{
+					fmt.Println("plate:",plate," does not exist in our BlockChain!")
+				}
+			}
+			//rs += fmt.Sprintf("height=%d, timestamp=%d, hash=%s, parentHash=%s, size=%d , value=%s\n",
+			//	currentBlock.Header.Height, currentBlock.Header.Timestamp, currentBlock.Header.Hash,
+			//		currentBlock.Header.ParentHash, currentBlock.Header.Size, currentBlock.Value)
+			//	}
+			currentBlock, _= blockChain.GetBlock(currentBlock.Header.Height-1, currentBlock.Header.ParentHash)
+			height = height - 1
+		}
+	}
+	rs += "\n"
+	fmt.Println(rs)
+	return rs
+}
+
 
 func (blockChain *BlockChain) GetBlock(height int32, hash string) (Block, bool) {
 	isAvali := false
