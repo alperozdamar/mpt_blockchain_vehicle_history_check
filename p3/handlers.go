@@ -79,7 +79,7 @@ func (txp *TransactionPool) GetOneTxFromPool() *p5.Transaction{
 	if(len(TxPool.GetTransactionPoolMap())>0){
 		for _, transactionObject := range TxPool.GetTransactionPoolMap() {
 			if userBalance >= transactionObject.TransactionFee {
-				transactionObject.Balance = transactionObject.Balance - transactionObject.TransactionFee
+				//transactionObject.Balance = transactionObject.Balance - transactionObject.TransactionFee
 				//TODO check how to add
 				//fmt.Println("transactionObject.Balance:",transactionObject.Balance)
 				return &transactionObject
