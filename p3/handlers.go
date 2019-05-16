@@ -650,99 +650,6 @@ func ConvertIntToString(n int32) string {
 	}
 }
 
-/*func StartTryingNonce(){
-	mpt:=p1.MerklePatriciaTrie{}
-	mpt.Initial()
-	mpt.Insert(p2.String(2),p2.String(5))
-	for {
-	GetLatestBlock:
-		blocks := SBC.GetLatestBlocks()
-		StopGeneratingNewBlock = false
-		validateNonce := p2.String(16)
-		hashPuzzle := string(blocks[0].Header.Hash) + string(validateNonce) + string(mpt.Root)
-		sum := sha3.Sum256([]byte(hashPuzzle))
-
-		if strings.HasPrefix(hex.EncodeToString(sum[:]), SPECIAL_BLOCK_PREFIX){
-			fmt.Println("HashPuzzle solved:",time.Now().Unix(), ",hashPuzzel:",	hex.EncodeToString(sum[:]))
-			peerMapJson,_ :=Peers.PeerMapToJson()
-			heartBeatData :=data.PrepareHeartBeatData(&SBC,Peers.GetSelfId(),peerMapJson,SELF_ADDR,true , validateNonce, mpt,&MinerKey.PublicKey)
-			ForwardHeartBeat(heartBeatData)
-			if StopGeneratingNewBlock {
-				fmt.Println("Someone solved hash puzzle before you did! Stop solving...!")
-				goto GetLatestBlock
-			}
-		}
-	}
-}*/
-
-/*func StartTryingNonce(){
-	var mutex = sync.Mutex{}
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	isValidTransaction := false
-	newMpt:=p1.MerklePatriciaTrie{}
-	newMpt.Initial()
-	//	newMpt.Insert(p2.String(2),p2.String(5))
-	for {
-	GetLatestBlock:
-		blocks := SBC.GetLatestBlocks()
-		StopGeneratingNewBlock = false
-		var transactionJSON string
-		var tempTransactionObject p5.Transaction
-		for txId, transactionObject := range TxPool.GetTransactionPoolMap() {
-			if transactionObject.Balance >= transactionObject.TransactionFee {
-				//TODO: Add Signature
-				isValidTransaction=true //CRITICAL!!!!!
-				transactionObject.Balance = transactionObject.Balance - transactionObject.TransactionFee
-				//TODO check how to add
-				//fmt.Println("transactionObject.Balance:",transactionObject.Balance)
-				HeartBeatVariable.Balance = HeartBeatVariable.Balance + transactionObject.TransactionFee
-				transactionJSON,_ = transactionObject.EncodeToJSON();
-				tempTransactionObject = transactionObject;
-				goto POW
-			} else {
-				//delete(TransactionMap, eventId)
-				TxPool.DeleteFromTransactionPool(txId)
-				fmt.Println("Transaction  Peer:", Peers.GetSelfId(),
-					" is failed. Balance =", transactionObject.Balance)
-			}
-		}
-	POW:
-		//fmt.Println("POW..")
-		validateNonce := p2.String(16)
-		hashPuzzle := string(blocks[0].Header.Hash) + string(validateNonce) + string(newMpt.Root)
-		sum := sha3.Sum256([]byte(hashPuzzle))
-		if strings.HasPrefix(hex.EncodeToString(sum[:]), SPECIAL_BLOCK_PREFIX){
-			fmt.Println("***********************************************************************************")
-			fmt.Println("*** HashPuzzle solved:",time.Now().Unix(), ",hashPuzzel:", hex.EncodeToString(sum[:]))
-			fmt.Println("***********************************************************************************")
-			peerMapJson,_ :=Peers.PeerMapToJson()
-			transactionJSON,_=tempTransactionObject.EncodeToJSON()
-			newMpt.Insert(tempTransactionObject.TransactionId,transactionJSON)
-			//newMpt.Insert(tempTransactionObject.TransactionId,"apple")
-			fmt.Println("test.mpt:", newMpt);
-			heartBeatData :=data.PrepareHeartBeatData(&SBC,Peers.GetSelfId(),peerMapJson,SELF_ADDR, true , validateNonce, newMpt,&MinerKey.PublicKey, isValidTransaction,transactionJSON,HeartBeatVariable.Balance)
-			ForwardHeartBeat(heartBeatData)
-
-			isValidTransaction=false //CRITICAL!!!!!
-			if(len(TxPool.GetTransactionPoolMap())>0){
-				fmt.Println("******** Miner solved the Puzzle and took the TX from Transaction Map!")
-				//TODO: BUG_FIX We need to delete Tx in here!After sending HeartBeat!!!
-				TxPool.DeleteFromTransactionPool(tempTransactionObject.TransactionId);
-				fmt.Println("NEW.StartTryingNonce.Tx.Pool.Size:",len(TxPool.GetTransactionPoolMap()))
-				TxPool.AddToConfirmedPool(tempTransactionObject);
-			}else{
-				fmt.Println("Nothing to delete.TransactionMap.Size is 0.")
-			}
-			if StopGeneratingNewBlock {
-				fmt.Println("Stop generating node!")
-				goto GetLatestBlock
-			}
-		}
-	}
-}*/
-
 //TODO : Thread Safe
 func StartTryingNonce() {
 	var mutex = sync.Mutex{}
@@ -884,10 +791,10 @@ func CarFormAPI(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("newhash is:", newhash)
 		}*/
 
-		//plainTextfromRozita, _ := p5.Decrypt(cipherTextToMiner, hash , label ,minerKey.PrivateKey)
-		//fmt.Println("plainTextfrom Rozita is:", plainTextfromRozita)
+		//plainTextfrom, _ := p5.Decrypt(cipherTextToMiner, hash , label ,minerKey.PrivateKey)
+		//fmt.Println("plainTextfrom is:", plainTextfrom)
 
-		//isVerified, _ := p5.Verification (RozitaKey.PublicKey, opts, hashed, newhash, signature)
+		//isVerified, _ := p5.Verification (Key.PublicKey, opts, hashed, newhash, signature)
 		//fmt.Println("Is Verified is:", isVerified)
 
 		//TransactionMap[transactionId] = newTransactionObject;
