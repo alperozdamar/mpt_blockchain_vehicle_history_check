@@ -900,5 +900,42 @@ func CarFormAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 
+func QueryCarAPI(w http.ResponseWriter, r *http.Request) {
+	log.Println("QueryCarAPI method is triggered!")
+
+	switch r.Method {
+	case "GET":
+		log.Println("GET QueryCarAPI triggered!")
+
+		dir, err := os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("PWD:",dir)
+
+		http.ServeFile(w, r, "QueryCar.html")
+	case "POST":
+		log.Println("POST QueryCarAPI triggered!")
+
+		// Call ParseForm() to parse the raw query and update r.PostForm and r.Form.
+		if err := r.ParseForm(); err != nil {
+			fmt.Fprintf(w, "ParseForm() err: %v", err)
+			return
+		}
+
+		fmt.Fprintf(w, "HTTP Post sent to Server! PostForm = %v\n", r.PostForm)
+		plate := r.FormValue("plate")
+		fmt.Fprintf(w, "plate = %s\n", plate)
+
+
+
+
+
+	default:
+		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
+	}
+}
+
+
 
 

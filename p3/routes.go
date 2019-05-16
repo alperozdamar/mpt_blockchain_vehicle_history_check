@@ -60,4 +60,17 @@ var routes = Routes{
 		"/postCarForm",
 		CarFormAPI,
 	},
+	Route{
+		"GetCarForm",
+		"GET",
+		"/getQueryCarForm",
+		QueryCarAPI,
+	},
+	Route{
+		"PostCarForm",
+		"POST",
+		"/postQueryCarForm",
+		QueryCarAPI,
+	},
+
 }
