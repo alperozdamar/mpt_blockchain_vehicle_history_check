@@ -75,6 +75,9 @@ func (sbc *SyncBlockChain) GenBlock(mpt p1.MerklePatriciaTrie,nonce string) p2.B
 	var found bool
 	currHeight := sbc.bc.Length
 
+
+	fmt.Println("alper.test.currHeight:",currHeight)
+
 	for currHeight >= 1 {
 		blockList, found = sbc.Get(currHeight)
 		if found == true {

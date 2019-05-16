@@ -17,6 +17,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -35,21 +36,90 @@ var SELF_ID=0
 var PROBLEM_IN_TA_SERVER=1
 var HeartBeatVariable data.HeartBeatData
 var StopGeneratingNewBlock =false
-var SPECIAL_BLOCK_PREFIX="00000"; //5 zeros...
 
-var mpt p1.MerklePatriciaTrie
+var SPECIAL_BLOCK_PREFIX="00000"; //5 zeros...
+//var SPECIAL_BLOCK_PREFIX="000000"; //6 zeros...
+//var mpt p1.MerklePatriciaTrie
 var newTransactionObject p5.Transaction;
 //key: transactionId , value:TransactionObject
-var TransactionMap  map[string]p5.Transaction // TransactionMap that contains transactions...
+//var TransactionMap  map[string]p5.Transaction // TransactionMap that contains transactions...
 var MinerKey *rsa.PrivateKey
+//var ExistingTransactionMap map[string]string
+var TxPool TransactionPool;
+
+type TransactionPool struct {
+	Pool      map[string]p5.Transaction `json:"pool"`
+	Confirmed map[string]bool        `json:"confirmed"`
+	mux       sync.Mutex
+}
+
+//Thread Safe
+func (txp *TransactionPool) AddToTransactionPool(tx p5.Transaction) { //duplicates in transactinon pool
+	txp.mux.Lock()
+	defer txp.mux.Unlock()
+	if _, ok := txp.Pool[tx.TransactionId]; !ok {
+		log.Println("In AddToTransactionPool : Adding new TX:",tx.TransactionId)
+		txp.Pool[tx.TransactionId] = tx
+	}
+}
+
+//Thread Safe
+func (txp *TransactionPool) DeleteFromTransactionPool(transactionId string) {
+	txp.mux.Lock()
+	defer txp.mux.Unlock()
+	delete(txp.Pool, transactionId)
+	log.Println("In DeleteFromTransactionPool : Deleting  TX:",transactionId)
+}
+
+func (txp *TransactionPool) GetTransactionPoolMap() map[string]p5.Transaction{
+	//	txp.mux.Lock()
+	//defer txp.mux.Unlock()
+	return txp.Pool
+}
+
+func (txp *TransactionPool) GetOneTxFromPool() *p5.Transaction{
+	//txp.mux.Lock()
+	//defer txp.mux.Unlock()
+	if(len(TxPool.GetTransactionPoolMap())>0){
+		for _, transactionObject := range TxPool.GetTransactionPoolMap() {
+			if transactionObject.Balance >= transactionObject.TransactionFee {
+				transactionObject.Balance = transactionObject.Balance - transactionObject.TransactionFee
+				//TODO check how to add
+				//fmt.Println("transactionObject.Balance:",transactionObject.Balance)
+				return &transactionObject
+			}
+		}
+	}
+	return nil;
+}
+
+
+/*func NewTransactionPool() *TransactionPool {
+	Pool :=  make(map[string]p5.Transaction)
+	Confirmed:=make(map[string]bool)
+	mutex:=sync.Mutex{}
+	return &TransactionPool{Pool, Confirmed,mutex}
+}*/
+
+func NewTransactionPool() TransactionPool {
+	Pool :=  make(map[string]p5.Transaction)
+	Confirmed:=make(map[string]bool)
+	mutex:=sync.Mutex{}
+	return TransactionPool{Pool, Confirmed,mutex}
+}
 
 //Create SyncBlockChain and PeerList instances.
 func init() {
 		fmt.Println("Init method is triggered!")
-		TransactionMap = make(map[string]p5.Transaction);
+		//TransactionMap = make(map[string]p5.Transaction);
+
+		TxPool=NewTransactionPool();
+
+		//ExistingTransactionMap = make(map[string]string);
+
 		SBC = data.NewBlockChain()
 		Peers = data.NewPeerList(Peers.GetSelfId(),32);
-		mpt=p1.MerklePatriciaTrie{}
+		mpt:=p1.MerklePatriciaTrie{}
 		mpt.Initial()
 		//mpt.Insert(p2.String(2),p2.String(5))
 		block:=p2.Block{}
@@ -269,6 +339,10 @@ func UploadBlock(w http.ResponseWriter, r *http.Request) {
 // 			(3) HeartBeatData.hops minus one, and if it's still bigger than 0, call ForwardHeartBeat()
 // 				to forward this heartBeat to all peers.
 func HeartBeatReceive(w http.ResponseWriter, r *http.Request) {
+	var mutex = sync.Mutex{}
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	defer r.Body.Close()
 	data, _ := ioutil.ReadAll(r.Body)
 	fmt.Println("<<<<<<<<<<<<<< HeartBeat Received  From:[", r.Host ,"] <<<<<<<<<<<<")
@@ -290,14 +364,18 @@ func HeartBeatReceive(w http.ResponseWriter, r *http.Request) {
 
 	transaction:=p5.Transaction{}
 	transaction.DecodeFromJSON(HeartBeatVariable.TransactionInfoJson)
-	fmt.Println("TransactionId:", transaction.TransactionId,
-		" came as a heartbeat from <<<<<<<<<<<<<< From:[", r.Host ,"] <<<<<<<<<<<<")
+
+	if(transaction.TransactionId!=""){
+		fmt.Println("TransactionId:", transaction.TransactionId,
+			" came as a heartbeat from <<<<<<<<<<<<<< From:[", r.Host ,"] <<<<<<<<<<<<")
+	}
 
 	//new added...
 	Peers.AddPublicKey(HeartBeatVariable.PeerPublicKey,HeartBeatVariable.Id);
 	Peers.Add(HeartBeatVariable.Addr, HeartBeatVariable.Id)
 	Peers.InjectPeerMapJson(HeartBeatVariable.PeerMapJson,  SELF_ADDR)
-	if (HeartBeatVariable.IfNewBlock && HeartBeatVariable.IfValidTransaction) {
+	//if (HeartBeatVariable.IfNewBlock && HeartBeatVariable.IfValidTransaction) {
+	if (HeartBeatVariable.IfNewBlock) {
 		heartBlock := p2.Block{}
 		heartBlock.DecodeFromJson(HeartBeatVariable.BlockJson)
 
@@ -305,6 +383,7 @@ func HeartBeatReceive(w http.ResponseWriter, r *http.Request) {
 		receivedPuzzle := heartBlock.Header.ParentHash+ heartBlock.Header.Nonce + heartBlock.Value.Root
 		sum := sha3.Sum256([]byte(receivedPuzzle))
 
+		//I can not come to this point when TX is not NULL!!
 		if (strings.HasPrefix(hex.EncodeToString(sum[:]), SPECIAL_BLOCK_PREFIX)){
 			fmt.Println("Block with SPECIAL PREFIX arrived from:[", r.Host ,"]")
 			latestBlocks := SBC.GetLatestBlocks()
@@ -315,16 +394,58 @@ func HeartBeatReceive(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			if (heartBlock.Header.Height == 1) {
-				SBC.Insert(heartBlock)
+				fmt.Println("TransactionIdCheck,TX:",transaction.TransactionId)
+
+			//	if ExistingTransactionMap[transaction.TransactionId]!="" {
+				if HeartBeatVariable.Balance==0 {
+			//		fmt.Println("Transaction already inserted. Do not insert again, TX:",transaction.TransactionId)
+				}else{
+					SBC.Insert(heartBlock)
+			//		ExistingTransactionMap[transaction.TransactionId] = HeartBeatVariable.TransactionInfoJson;
+					fmt.Println("Transaction inserted, TX:",transaction.TransactionId)
+				}
 			} else {
 				_, flag := SBC.GetBlock(heartBlock.Header.Height-1, heartBlock.Header.ParentHash)
 				if flag {
-					SBC.Insert(heartBlock)
+					fmt.Println("No.Gap.Inserting Heart Beat Block:",heartBlock)
+					fmt.Println("No.Gap.SBC:",SBC)
+					//TODO: Check TX if it is inserted before!
+
+					// If Transaction inserted before ! Do not insert again,
+					// If
+
+					fmt.Println("TransactionIdCheck.2,TX:",transaction.TransactionId)
+
+				//	if ExistingTransactionMap[transaction.TransactionId]!="" {
+					if HeartBeatVariable.Balance==0 {
+						//fmt.Println("Transaction already inserted. Do not insert again, TX:",transaction.TransactionId)
+					}else {
+						SBC.Insert(heartBlock)
+				//		ExistingTransactionMap[transaction.TransactionId] = HeartBeatVariable.TransactionInfoJson;
+						fmt.Println("Transaction inserted, TX:",transaction.TransactionId)
+					}
 				} else {
+					fmt.Println("Gap.Inserting Heart Beat Block:",heartBlock)
+					fmt.Println("Gap.SBC:",SBC)
 					AskForBlock(heartBlock.Header.Height-1, heartBlock.Header.ParentHash)
-					SBC.Insert(heartBlock)
+
+					fmt.Println("TransactionIdCheck.3,TX:",transaction.TransactionId)
+
+				//	if ExistingTransactionMap[transaction.TransactionId]!="" {
+					if HeartBeatVariable.Balance==0 {
+					//	fmt.Println("Transaction already inserted. Do not insert again, TX:",transaction.TransactionId)
+					}else{
+						SBC.Insert(heartBlock)
+				//		ExistingTransactionMap[transaction.TransactionId] = HeartBeatVariable.TransactionInfoJson;
+						fmt.Println("Transaction inserted, TX:",transaction.TransactionId)
+					}
+
 				}
 			}
+
+			//TODO:After we are adding block to the SBC, we need to delete TX from TxPool.
+			//TxPool.DeleteFromTransactionPool(transaction.TransactionId);
+
 		}else{
 			fmt.Println(" Ignoring incoming Heart Beat Block! Unmatched Puzzle! Calculated Puzzle:", hex.EncodeToString(sum[:]))
 			fmt.Println("TEST.ALPER.RECEIVE********************************************************")
@@ -394,7 +515,12 @@ func AskForBlock(height int32, hash string) {
 				fmt.Println("From peer:", key)
 
 			}
-			SBC.Insert(missingBlock)
+
+			//if HeartBeatVariable.Balance==0 {
+				//		fmt.Println("Transaction already inserted. Do not insert again, TX:",transaction.TransactionId)
+			//}else{
+				SBC.Insert(missingBlock)
+			//}
 		}
 	}
 }
@@ -406,14 +532,16 @@ func ForwardHeartBeat(heartBeatData data.HeartBeatData) {
 		Peers.Rebalance()
 		for addr,_ := range(Peers.Copy()) {
 
-			transaction:=p5.Transaction{}
+			transaction := p5.Transaction{}
 			transaction.DecodeFromJSON(heartBeatData.TransactionInfoJson)
 
-			resp, err := http.Post("http://"+ addr + "/heartbeat/receive",
+			resp, err := http.Post("http://"+addr+"/heartbeat/receive",
 				"application/json; charset=UTF-8", strings.NewReader(string(heartBData)))
 
-			fmt.Println("TransactionId:", transaction.TransactionId,
-				" is sent with heartbeat to >>>>>>>>>>>>>> ForwardHeartBeat Sent  To:[", addr ,"] >>>>>>>>>>>>>>>>")
+			if (transaction.TransactionId != "") {
+				fmt.Println("TransactionId:", transaction.TransactionId,
+					" is sent with heartbeat to >>>>>>>>>>>>>> ForwardHeartBeat Sent  To:[", addr, "] >>>>>>>>>>>>>>>>")
+			}
 
 			if(err != nil || resp.StatusCode != 200) {
 				Peers.Delete(addr)
@@ -450,6 +578,7 @@ func StartHeartBeat() {
 				log.Fatal(err)
 			}
 
+			mpt:=p1.MerklePatriciaTrie{};
 			heartBearData:= data.PrepareHeartBeatData(&SBC, Peers.GetSelfId(), peerMapToJson, SELF_ADDR,false,"",mpt ,&MinerKey.PublicKey,false,"",0)
 
 			jsonBytes, err := json.Marshal(heartBearData)
@@ -520,59 +649,72 @@ func ConvertIntToString(n int32) string {
 }*/
 
 func StartTryingNonce(){
+	var mutex = sync.Mutex{}
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	isValidTransaction := false
-	//forever...
+	newMpt:=p1.MerklePatriciaTrie{}
+	newMpt.Initial()
+	//	newMpt.Insert(p2.String(2),p2.String(5))
 	for {
 	GetLatestBlock:
 		blocks := SBC.GetLatestBlocks()
 		StopGeneratingNewBlock = false
 		var transactionJSON string
 		var tempTransactionObject p5.Transaction
-		//Iterate over Transactions. 1
-	//	mpt=p1.MerklePatriciaTrie{};
-	//	mpt.Initial()
-		for eventId, transactionObject := range TransactionMap {
+		for txId, transactionObject := range TxPool.Pool {
 			if transactionObject.Balance >= transactionObject.TransactionFee {
 				//TODO: Add Signature
-				isValidTransaction=true
+				isValidTransaction=true //CRITICAL!!!!!
 				transactionObject.Balance = transactionObject.Balance - transactionObject.TransactionFee
 				//TODO check how to add
 				//fmt.Println("transactionObject.Balance:",transactionObject.Balance)
 				HeartBeatVariable.Balance = HeartBeatVariable.Balance + transactionObject.TransactionFee
 				transactionJSON,_ = transactionObject.EncodeToJSON();
 				tempTransactionObject = transactionObject;
-				//fmt.Println("StartTryingNonce.TransactionId:",deletedTransactionId)
-				//fmt.Println("Go To POW")
 				goto POW
 			} else {
-				delete(TransactionMap, eventId)
+				//delete(TransactionMap, eventId)
+				TxPool.DeleteFromTransactionPool(txId)
 				fmt.Println("Transaction  Peer:", Peers.GetSelfId(),
 					" is failed. Balance =", transactionObject.Balance)
 			}
 		}
+
 	POW:
 
 		//fmt.Println("POW..")
 
 		validateNonce := p2.String(16)
-		hashPuzzle := string(blocks[0].Header.Hash) + string(validateNonce) + string(mpt.Root)
+		hashPuzzle := string(blocks[0].Header.Hash) + string(validateNonce) + string(newMpt.Root)
 		sum := sha3.Sum256([]byte(hashPuzzle))
 
 		if strings.HasPrefix(hex.EncodeToString(sum[:]), SPECIAL_BLOCK_PREFIX){
-			fmt.Println("HashPuzzle solved:",time.Now().Unix(), ",hashPuzzel:", hex.EncodeToString(sum[:]))
+			fmt.Println("***********************************************************************************")
+			fmt.Println("*** HashPuzzle solved:",time.Now().Unix(), ",hashPuzzel:", hex.EncodeToString(sum[:]))
+			fmt.Println("***********************************************************************************")
 			peerMapJson,_ :=Peers.PeerMapToJson()
-
 			transactionJSON,_=tempTransactionObject.EncodeToJSON()
-			mpt.Insert(tempTransactionObject.TransactionId,transactionJSON)
-			fmt.Println("test.mpt:", mpt);
+			newMpt.Insert(tempTransactionObject.TransactionId,transactionJSON)
 
-			heartBeatData :=data.PrepareHeartBeatData(&SBC,Peers.GetSelfId(),peerMapJson,SELF_ADDR, true , validateNonce, mpt,&MinerKey.PublicKey, isValidTransaction,transactionJSON,HeartBeatVariable.Balance)
+			//newMpt.Insert(tempTransactionObject.TransactionId,"apple")
+
+			fmt.Println("test.mpt:", newMpt);
+			heartBeatData :=data.PrepareHeartBeatData(&SBC,Peers.GetSelfId(),peerMapJson,SELF_ADDR, true , validateNonce, newMpt,&MinerKey.PublicKey, isValidTransaction,transactionJSON,HeartBeatVariable.Balance)
 			ForwardHeartBeat(heartBeatData)
-			isValidTransaction=false
 
-			fmt.Println("******** Before.TransactionMap.Size:",len(TransactionMap))
-			delete(TransactionMap, tempTransactionObject.TransactionId);
-			fmt.Println("******** After.TransactionMap.Size:",len(TransactionMap))
+			//TODO: We may need to delete Tx in here!After sending HeartBeat!!!
+
+			isValidTransaction=false //CRITICAL!!!!!
+			if(len(TxPool.GetTransactionPoolMap())>0){
+				fmt.Println("******** Miner solved the Puzzle and took the TX from Transaction Map!")
+				fmt.Println("******** Before.TransactionMap.Size:",len(TxPool.GetTransactionPoolMap()))
+				delete(TxPool.GetTransactionPoolMap(), tempTransactionObject.TransactionId);
+				fmt.Println("******** After.TransactionMap.Size:",len(TxPool.GetTransactionPoolMap()))
+			}else{
+				fmt.Println("Nothing to delete.TransactionMap.Size is 0.")
+			}
 
 			if StopGeneratingNewBlock {
 				fmt.Println("Stop generating node!")
@@ -582,6 +724,60 @@ func StartTryingNonce(){
 	}
 }
 
+//TODO : Thread Safe
+/*func StartTryingNonce() {
+	var mutex = sync.Mutex{}
+	mutex.Lock()
+	defer mutex.Unlock()
+	isValidTransaction := false
+	//forever...
+	newMpt := p1.MerklePatriciaTrie{}
+	newMpt.Initial()
+	//	newMpt.Insert(p2.String(2),p2.String(5))
+	for {
+	GetLatestBlock:
+		blocks := SBC.GetLatestBlocks()
+		StopGeneratingNewBlock = false
+		var transactionJSON string
+		//Get Thread Safe 1 TX object from Pool.
+		transaction := TxPool.GetOneTxFromPool()
+		if (transaction != nil) {
+			HeartBeatVariable.Balance = HeartBeatVariable.Balance + transaction.TransactionFee
+			transactionJSON, _ = transaction.EncodeToJSON();
+			//fmt.Println("POW..")
+			validateNonce := p2.String(16)
+			hashPuzzle := string(blocks[0].Header.Hash) + string(validateNonce) + string(newMpt.Root)
+			sum := sha3.Sum256([]byte(hashPuzzle))
+
+			if strings.HasPrefix(hex.EncodeToString(sum[:]), SPECIAL_BLOCK_PREFIX) {
+				fmt.Println("***********************************************************************************")
+				fmt.Println("*** HashPuzzle solved:", time.Now().Unix(), ",hashPuzzel:", hex.EncodeToString(sum[:]))
+				fmt.Println("***********************************************************************************")
+				peerMapJson, _ := Peers.PeerMapToJson()
+				transactionJSON, _ = transaction.EncodeToJSON()
+				newMpt.Insert(transaction.TransactionId, transactionJSON)
+				//newMpt.Insert(tempTransactionObject.TransactionId,"apple")
+				fmt.Println("test.mpt:", newMpt);
+				heartBeatData := data.PrepareHeartBeatData(&SBC, Peers.GetSelfId(), peerMapJson, SELF_ADDR, true, validateNonce,
+					newMpt, &MinerKey.PublicKey, isValidTransaction, transactionJSON, HeartBeatVariable.Balance)
+				ForwardHeartBeat(heartBeatData)
+				isValidTransaction = false //TODO:NOT USING FOR NOW!! CRITICAL!!!!!
+				fmt.Println("******** Miner solved the Puzzle and took the TX from Transaction Map!")
+				fmt.Println("******** Before.TransactionMap.Size:", len(TxPool.GetTransactionPoolMap()))
+				//delete(TransactionMap, tempTransactionObject.TransactionId);
+				TxPool.DeleteFromTransactionPool(transaction.TransactionId)
+				fmt.Println("******** After.TransactionMap.Size:", len(TxPool.GetTransactionPoolMap()))
+				if StopGeneratingNewBlock {
+					fmt.Println("Stop generating node!")
+					goto GetLatestBlock
+				}
+			}
+		}else{//if transaction is NOT NULL....
+		//	fmt.Println("No Transaction in TxPool.")
+		}
+	}//for forever
+}
+*/
 
 func CarFormAPI(w http.ResponseWriter, r *http.Request) {
 	log.Println("GetCarForm method is triggered!")
@@ -623,35 +819,30 @@ func CarFormAPI(w http.ResponseWriter, r *http.Request) {
 		mileageInt := int32(i64)
 		newTransactionObject =p5.NewTransaction(transactionId,mileageInt,plate,transactionFee,100);
 		fmt.Println("Transaction:", newTransactionObject);
-
 		fmt.Println("StartTryingNonce.NewTransaction:",newTransactionObject);
 		transactionJSON,_:=newTransactionObject.EncodeToJSON()
 		fmt.Println("Transaction JSON:",transactionJSON)
 
-
 		//mpt.Insert(transactionId,transactionJSON)
 		//fmt.Println("mpt:",mpt)
 
-		PeerMap := Peers.GetPeerMap()
-		fmt.Println("Size of PeerMap:",len(PeerMap))
+		PeerPublicKeyMap := Peers.GetPeerPublicKeyMap()
+		fmt.Println("Size of PeerPublicKeyMap:",len(PeerPublicKeyMap))
 		//key is address
 		//value is id
 		// Send heart beat to every node !
-		for publicKey, port := range PeerMap {
+		/*for publicKey, port := range  PeerPublicKeyMap {
 			fmt.Printf("key[%s] value[%s]\n", publicKey, port)
-
 			cipherTextToMiner, hash, label, _:=p5.Encrypt(transactionJSON,&MinerKey.PublicKey);
-
 			fmt.Println("cipherTextToMiner is:", cipherTextToMiner )
 			fmt.Println("hash is:", hash )
 			fmt.Println("label is:", label )
-
 			signature, opts, hashed, newhash, _:= p5.Sign(cipherTextToMiner, MinerKey) //Private Key
 			fmt.Println("User Signature is:", signature)
 			fmt.Println("opts is:", opts)
 			fmt.Println("hashed is:", hashed)
 			fmt.Println("newhash is:", newhash)
-		}
+		}*/
 
 		//plainTextfromRozita, _ := p5.Decrypt(cipherTextToMiner, hash , label ,minerKey.PrivateKey)
 		//fmt.Println("plainTextfrom Rozita is:", plainTextfromRozita)
@@ -659,9 +850,13 @@ func CarFormAPI(w http.ResponseWriter, r *http.Request) {
 		//isVerified, _ := p5.Verification (RozitaKey.PublicKey, opts, hashed, newhash, signature)
 		//fmt.Println("Is Verified is:", isVerified)
 
-		TransactionMap[transactionId] = newTransactionObject;
 
-		fmt.Println("TransactionMap Size:",len(TransactionMap))
+		//TransactionMap[transactionId] = newTransactionObject;
+
+		TxPool.AddToTransactionPool(newTransactionObject);
+		//TxPool.Pool[newTransactionObject.TransactionId]=newTransactionObject
+
+		//fmt.Println("TransactionMap Size:",len(TransactionMap))
 
 	default:
 		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")

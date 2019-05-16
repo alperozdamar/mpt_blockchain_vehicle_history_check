@@ -48,6 +48,10 @@ func (f PeerList) GetPeerMap() map[string]int32{
 	return f.peerMap
 }
 
+func (f PeerList) GetPeerPublicKeyMap() map[*rsa.PublicKey]int32{
+	return f.peerPublicKeyMap
+}
+
 func (f PeerList) GetMux() sync.Mutex{
 	return f.mux
 }

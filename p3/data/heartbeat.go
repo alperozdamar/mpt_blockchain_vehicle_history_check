@@ -4,6 +4,7 @@ import (
 	"../../p1"
 	"crypto/rsa"
 	"encoding/json"
+	"fmt"
 )
 
 type HeartBeatData struct {
@@ -42,12 +43,15 @@ func NewHeartBeatData(ifNewBlock bool, id int32, blockJson string, peerMapJson s
 // "peerList.PeerMapToJSON()". Sorry for the confusion. There is no BASE64 in this project.
 func PrepareHeartBeatData(sbc *SyncBlockChain, selfId int32, peerMapJson string, addr string, generateNewBlock bool,nonce string ,mpt p1.MerklePatriciaTrie,peerPublicKey *rsa.PublicKey,ifValidTransaction bool,transactionInfoJson string,balance int) HeartBeatData {
 	newHeartBeatData := NewHeartBeatData(false, selfId, "", peerMapJson, addr,peerPublicKey,ifValidTransaction ,transactionInfoJson ,balance)
-	if generateNewBlock && ifValidTransaction {
+	//if generateNewBlock && ifValidTransaction {
+	if generateNewBlock  {
+		fmt.Println("Do GenBlock for TX:",transactionInfoJson,"\nmpt:",mpt)
 		newBlock := sbc.GenBlock(mpt, nonce)
 		blockJson, _ := newBlock.EncodeToJson()
 		newHeartBeatData = NewHeartBeatData(true, selfId, blockJson, peerMapJson, addr,peerPublicKey,ifValidTransaction ,transactionInfoJson ,balance)
 	}else{
-		newHeartBeatData = NewHeartBeatData(false, selfId, "", peerMapJson, addr,peerPublicKey,ifValidTransaction ,transactionInfoJson ,balance)
+		fmt.Println("***Do not GenBlock!, ifValidTx:",ifValidTransaction,",generateNewBlock:",generateNewBlock)
+		newHeartBeatData = NewHeartBeatData(false, selfId, "", peerMapJson, addr,peerPublicKey,false ,transactionInfoJson ,balance)
 	}
 	return newHeartBeatData
 }
