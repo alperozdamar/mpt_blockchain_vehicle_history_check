@@ -26,25 +26,18 @@ var REGISTER_SERVER = TA_SERVER + "/peer"
 var ASK_PEER_REQUEST = "/block"
 var BC_DOWNLOAD_SERVER = TA_SERVER + "/upload"
 var SELF_ADDR = "localhost:6686";				//peer's address! It will updated after initialization.
-
 var SBC data.SyncBlockChain
 var Peers data.PeerList
 var ifStarted bool
-
 var FIRST_PEER_ADDRESS="localhost:6686"			//first peer's hard-coded address!
 var SELF_ID=0
 var PROBLEM_IN_TA_SERVER=1
 var HeartBeatVariable data.HeartBeatData
 var StopGeneratingNewBlock =false
-
-var SPECIAL_BLOCK_PREFIX="0000"; //5 zeros...
+var SPECIAL_BLOCK_PREFIX="0000"; //4 zeros...
 //var SPECIAL_BLOCK_PREFIX="000000"; //6 zeros...
-//var mpt p1.MerklePatriciaTrie
 var newTransactionObject p5.Transaction;
-//key: transactionId , value:TransactionObject
-//var TransactionMap  map[string]p5.Transaction // TransactionMap that contains transactions...
 var MinerKey *rsa.PrivateKey
-//var ExistingTransactionMap map[string]string
 var TxPool TransactionPool;
 
 type TransactionPool struct {
@@ -757,7 +750,6 @@ func StartTryingNonce() {
 	defer mutex.Unlock()
 	isValidTransaction := false
 	//forever...
-	//	newMpt.Insert(p2.String(2),p2.String(5))
 	for {
 	GetLatestBlock:
 		newMpt := p1.MerklePatriciaTrie{}
