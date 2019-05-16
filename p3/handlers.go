@@ -40,7 +40,7 @@ var newTransactionObject p5.Transaction;
 var MinerKey *rsa.PrivateKey
 var TxPool TransactionPool;
 var userBalance int=1000;
-var transactionFee int=10;
+var transactionFee int=100;
 
 type TransactionPool struct {
 	Pool      map[string]p5.Transaction `json:"pool"`
@@ -759,34 +759,49 @@ func CarFormAPI(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		userBalance = userBalance-transactionFee;
+		if(userBalance-transactionFee>=0) {
+			userBalance = userBalance-transactionFee;
 
-		fmt.Fprintf(w, "HTTP Post sent to Registeration Server! PostForm = %v\n", r.PostForm)
-		plate := r.FormValue("plate")
-		mileage := r.FormValue("mileage")
-		fmt.Fprintf(w, "plate = %s\n", plate)
-		fmt.Fprintf(w, "mileage = %s\n", mileage)
-		fmt.Fprintf(w, "User's New Balance = %d\n", userBalance)
+			t := time.Now()
+			fmt.Println(t.Format(time.RFC3339))
+			t1, e := time.Parse(
+				time.RFC3339,
+				t.Format(time.RFC3339))
+			fmt.Println("Time.1:",t1)
 
-		transactionId:=p2.String(8)
-		transactionFee:=10;
-		i64, _ := strconv.ParseInt(mileage, 10, 32)
-		mileageInt := int32(i64)
-		newTransactionObject =p5.NewTransaction(transactionId,mileageInt,plate,transactionFee,userBalance);
-		fmt.Println("Transaction:", newTransactionObject);
-		fmt.Println("StartTryingNonce.NewTransaction:",newTransactionObject);
-		transactionJSON,_:=newTransactionObject.EncodeToJSON()
-		fmt.Println("Transaction JSON:",transactionJSON)
+			if(e!=nil){
+				fmt.Println("Error:",e)
+			}
 
-		//mpt.Insert(transactionId,transactionJSON)
-		//fmt.Println("mpt:",mpt)
+			a := makeTimestamp()
 
-		PeerPublicKeyMap := Peers.GetPeerPublicKeyMap()
-		fmt.Println("Size of PeerPublicKeyMap:",len(PeerPublicKeyMap))
-		//key is address
-		//value is id
-		// Send heart beat to every node !
-		/*for publicKey, port := range  PeerPublicKeyMap {
+			fmt.Printf("Time:%d \n", a)
+
+			fmt.Fprintf(w, "HTTP Post sent to Registeration Server! PostForm = %v\n", r.PostForm)
+			plate := r.FormValue("plate")
+			mileage := r.FormValue("mileage")
+			fmt.Fprintf(w, "plate = %s\n", plate)
+			fmt.Fprintf(w, "mileage = %s\n", mileage)
+			fmt.Fprintf(w, "User's New Balance = %d\n", userBalance)
+
+			transactionId := p2.String(8)
+			i64, _ := strconv.ParseInt(mileage, 10, 32)
+			mileageInt := int32(i64)
+			newTransactionObject = p5.NewTransaction(transactionId, mileageInt, plate, transactionFee, userBalance,t1,SELF_ADDR);
+			fmt.Println("Transaction:", newTransactionObject);
+			fmt.Println("StartTryingNonce.NewTransaction:", newTransactionObject);
+			transactionJSON, _ := newTransactionObject.EncodeToJSON()
+			fmt.Println("Transaction JSON:", transactionJSON)
+
+			//mpt.Insert(transactionId,transactionJSON)
+			//fmt.Println("mpt:",mpt)
+
+			PeerPublicKeyMap := Peers.GetPeerPublicKeyMap()
+			fmt.Println("Size of PeerPublicKeyMap:", len(PeerPublicKeyMap))
+			//key is address
+			//value is id
+			// Send heart beat to every node !
+			/*for publicKey, port := range  PeerPublicKeyMap {
 			fmt.Printf("key[%s] value[%s]\n", publicKey, port)
 			cipherTextToMiner, hash, label, _:=p5.Encrypt(transactionJSON,&MinerKey.PublicKey);
 			fmt.Println("cipherTextToMiner is:", cipherTextToMiner )
@@ -799,21 +814,29 @@ func CarFormAPI(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("newhash is:", newhash)
 		}*/
 
-		//plainTextfrom, _ := p5.Decrypt(cipherTextToMiner, hash , label ,minerKey.PrivateKey)
-		//fmt.Println("plainTextfrom is:", plainTextfrom)
+			//plainTextfrom, _ := p5.Decrypt(cipherTextToMiner, hash , label ,minerKey.PrivateKey)
+			//fmt.Println("plainTextfrom is:", plainTextfrom)
 
-		//isVerified, _ := p5.Verification (Key.PublicKey, opts, hashed, newhash, signature)
-		//fmt.Println("Is Verified is:", isVerified)
+			//isVerified, _ := p5.Verification (Key.PublicKey, opts, hashed, newhash, signature)
+			//fmt.Println("Is Verified is:", isVerified)
 
-		//TransactionMap[transactionId] = newTransactionObject;
-		go TxPool.AddToTransactionPool(newTransactionObject);
-		//TxPool.Pool[newTransactionObject.TransactionId]=newTransactionObject
-		//fmt.Println("TransactionMap Size:",len(TransactionMap))
+			//TransactionMap[transactionId] = newTransactionObject;
+			go TxPool.AddToTransactionPool(newTransactionObject);
+			//TxPool.Pool[newTransactionObject.TransactionId]=newTransactionObject
+			//fmt.Println("TransactionMap Size:",len(TransactionMap))
+
+		}else{
+			fmt.Fprintf(w, "User's has not got enough balance to add Transaction! Sorry!Balance = %d\n", userBalance)
+		}
+
 	default:
 		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
 	}
 }
 
+func makeTimestamp() int64 {
+	return time.Now().UnixNano() / int64(time.Millisecond)
+}
 
 func QueryCarAPI(w http.ResponseWriter, r *http.Request) {
 	log.Println("QueryCarAPI method is triggered!")

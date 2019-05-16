@@ -2,6 +2,7 @@ package p5
 
 import (
 	"encoding/json"
+	"time"
 )
 
 type Transaction struct {
@@ -10,15 +11,19 @@ type Transaction struct {
 	Plate			string 		`json:"plate"` //car's pilate (Unique Value)
 	TransactionFee	int		    `json:"transactionFee"`
 	Balance			int	        `json:"balance"`
+	Time			time.Time   `json:"time"`
+	ServiceName     string	    `json:"service"`
 }
 
-func NewTransaction(transactionId string, mileage int32, plate string,transactionFee int,balance int) (Transaction)   {
+func NewTransaction(transactionId string, mileage int32, plate string,transactionFee int,balance int,time time.Time,serviceName string) (Transaction)   {
 	return Transaction{
 			TransactionId:transactionId,
 			Mileage:mileage,
 			Plate:plate,
 			TransactionFee:transactionFee,
 			Balance:balance,
+			Time:time,
+			ServiceName:serviceName,
 		}
 }
 
