@@ -39,6 +39,8 @@ var SPECIAL_BLOCK_PREFIX="0000"; //4 zeros...
 var newTransactionObject p5.Transaction;
 var MinerKey *rsa.PrivateKey
 var TxPool TransactionPool;
+var userBalance int=1000;
+var transactionFee int=10;
 
 type TransactionPool struct {
 	Pool      map[string]p5.Transaction `json:"pool"`
@@ -76,11 +78,14 @@ func (txp *TransactionPool) GetOneTxFromPool() *p5.Transaction{
 	//defer txp.mux.Unlock()
 	if(len(TxPool.GetTransactionPoolMap())>0){
 		for _, transactionObject := range TxPool.GetTransactionPoolMap() {
-			if transactionObject.Balance >= transactionObject.TransactionFee {
+			if userBalance >= transactionObject.TransactionFee {
 				transactionObject.Balance = transactionObject.Balance - transactionObject.TransactionFee
 				//TODO check how to add
 				//fmt.Println("transactionObject.Balance:",transactionObject.Balance)
 				return &transactionObject
+			}else{
+				fmt.Println("User has not got enough balance:",userBalance)
+				return nil;
 			}
 		}
 	}
@@ -668,7 +673,7 @@ func StartTryingNonce() {
 		transaction := TxPool.GetOneTxFromPool()
 		if (transaction != nil) {
 
-			HeartBeatVariable.Balance = HeartBeatVariable.Balance + transaction.TransactionFee
+			HeartBeatVariable.Balance = userBalance - transaction.TransactionFee
 			transactionJSON, _ = transaction.EncodeToJSON();
 
 			//TODO: Check balance and the other things here later...
@@ -754,17 +759,20 @@ func CarFormAPI(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		userBalance = userBalance-transactionFee;
+
 		fmt.Fprintf(w, "HTTP Post sent to Registeration Server! PostForm = %v\n", r.PostForm)
 		plate := r.FormValue("plate")
 		mileage := r.FormValue("mileage")
 		fmt.Fprintf(w, "plate = %s\n", plate)
 		fmt.Fprintf(w, "mileage = %s\n", mileage)
+		fmt.Fprintf(w, "User's New Balance = %d\n", userBalance)
 
 		transactionId:=p2.String(8)
 		transactionFee:=10;
 		i64, _ := strconv.ParseInt(mileage, 10, 32)
 		mileageInt := int32(i64)
-		newTransactionObject =p5.NewTransaction(transactionId,mileageInt,plate,transactionFee,100);
+		newTransactionObject =p5.NewTransaction(transactionId,mileageInt,plate,transactionFee,userBalance);
 		fmt.Println("Transaction:", newTransactionObject);
 		fmt.Println("StartTryingNonce.NewTransaction:",newTransactionObject);
 		transactionJSON,_:=newTransactionObject.EncodeToJSON()
